@@ -28,6 +28,7 @@
 // if (out==0) set zr = 1
 // if (out<0) set ng = 1
 
+// 入力全部１でout=1になるのが分からぬ
 
 CHIP ALU {
     IN
@@ -48,19 +49,19 @@ CHIP ALU {
     // Put you code here:
     // x input
     Mux16(a=x, b=false, sel=zx, out=x2);
-    Not16(in=x2, out=notx);
-    Mux16(a=notx, b=x2, sel=nx, out=xIn);
+    Not16(in=x2, out=notX);
+    Mux16(a=x2, b=notX, sel=nx, out=xIn);
     // y input
     Mux16(a=y, b=false, sel=zy, out=y2);
-    Not16(in=y2, out=noty);
-    Mux16(a=noty, b=y2, sel=ny, out=yIn);
+    Not16(in=y2, out=notY);
+    Mux16(a=y2, b=notY, sel=ny, out=yIn);
     // f
     Add16(a=xIn, b=yIn, out=sum);
-    And16(a=xIn, b=yIn, out=XandY);
-    Mux16(a=sum, b=XandY, sel=f, out=c);
+    And16(a=xIn, b=yIn, out=and);
+    Mux16(a=and, b=sum, sel=f, out=c);
     // no
     Not16(in=c, out=notC);
-    Mux16(a=notC, b=c, sel=no, out=out, out[0..7]=out7, out[8..15]=out15, out[15]=negative);
+    Mux16(a=c, b=notC, sel=no, out=out, out[0..7]=out7, out[8..15]=out15, out[15]=negative);
     // zr
     Or8Way(in=out7, out=any7);
     Or8Way(in=out15, out=any15);
