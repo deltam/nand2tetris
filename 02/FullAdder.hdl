@@ -18,5 +18,5 @@ CHIP FullAdder {
     HalfAdder(a=a, b=b, sum=sum1, carry=carry1);
     HalfAdder(a=sum1, b=c, sum=sum, carry=carry2);
     // 最大で3にしかならないから、a,bが両方1になることはない
-    And(a=carry1, b=carry2, out=carry);
+    Or(a=carry1, b=carry2, out=carry);
 }
