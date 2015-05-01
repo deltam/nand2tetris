@@ -9,11 +9,34 @@
 // program clears the screen, i.e. writes "white" in every pixel.
 
 // Put your code here.
+(START)
+    // clear
+    @24575 // SCREENの最後アドレス
+    M=0   // 最後のアドレスに番兵を設定
+    @SCREEN
+    D=A
+    @R0
+    M=D
+(CLEAR)
+    @R0
+    A=M
+    D=M
+    @LOOP
+    D;JEQ // SCREENメモリの番兵に到着したら終わる
+    @R0
+    A=M
+    M=0
+    @R0
+    M=M+1
+    @CLEAR
+    0;JMP
+
 (LOOP)
     @KBD
     D=M
-    @LOOP
+    @START // キーが押されてなかったらクリアしてループ継続
     D;JEQ
+
     @24575 // SCREENの最後アドレス
     M=-1   // 最後のアドレスに番兵を設定
     @SCREEN
@@ -25,7 +48,7 @@
     A=M
     D=M
     @LOOP
-    D;JLT // SCREENメモリの番兵に到着したら終わる
+    D;JLT // SCREENメモリの番兵に到着したらLOOPに戻る
     @R0
     A=M
     M=-1
