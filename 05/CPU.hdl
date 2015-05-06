@@ -41,4 +41,71 @@ CHIP CPU {
     PARTS:
     // Put your code here:
 
+    // decode
+    Not(in=instruction[15], out=instA);    // 1=A命令
+    Not(in=instA, out=instD);             // 1=D命令
+
+    // A命令
+    Not(in=instruction[15], out=loadAReg); // 1=ARegisterを書き換える
+
+    // D命令
+    And(a=instD, b=instruction[12], out=loadDReg); // 1=DRegisterを書き換える
+    And(a=instD, b=instruction[12], out=readMem);  // 1=ALUにinMを入力
+
+    // dest
+    And(a=instD, b=instruction[5], out=saveAReg); // ALU計算結果をAレジスタに保存
+    And(a=instD, b=instruction[4], out=saveDReg); // ALU計算結果をDレジスタに保存
+    And(a=instD, b=instruction[3], out=saveM);    // ALU計算結果をMemory[A]に保存
+
+    // jmp
+    And(a=instD, b=instruction[2], out=j1);
+    And(a=instD, b=instruction[1], out=j2);
+    And(a=instD, b=instruction[0], out=j3);
+
+
+    // ARegister
+    Mux16(a=outALU, b[15]=false, b[0..14]=instruction[0..14], sel=loadAReg, out=toAReg);
+    ARegister(in=toAReg, load=loadAReg, out=fromAReg,
+    // addressM
+                                        out[15]=false, out[0..14]=addressM);
+
+
+    // DRegister
+    DRegister(in=outALU, load=loadDReg, out=fromDReg);
+
+
+    // ALU
+    Mux16(a=fromAReg, b=inM, sel=readMem, out=toALU);
+    ALU(x=fromDReg, y=toALU, zx=instruction[11],
+                             nx=instruction[10],
+                             zy=instruction[9],
+                             ny=instruction[8],
+                             f= instruction[7],
+                             no=instruction[6],
+                             zr=zrALU,
+                             ng=ngALU,
+                             out=outALU, out=outM);
+
+
+    // writeM
+    And(a=instD, b=saveM, out=writeM);
+
+
+    // jmp
+    Xor(a=ngALU, b=j1, out=tmp1);
+    Not(in=tmp1, out=jmp1);
+    Xor(a=zrALU, b=j2, out=tmp2);
+    Not(in=tmp2, out=jmp2);
+    Or(a=zrALU, b=ngALU, out=tmp3);
+    Not(in=tmp3, out=grZero);   // 0<outALU
+    Xor(a=grZero, b=j3, out=tmp4);
+    Not(in=tmp4, out=jmp3);
+
+    And(a=jmp1, b=jmp2, out=jtmp1);
+    And(a=instD, b=jmp3, out=jtmp2);
+    And(a=jtmp1, b=jtmp2, out=loadPC); // 1=PCを書き換える
+
+
+    // program counter
+    PC(in=fromAReg, load=loadPC, inc=true, reset=reset, out[15]=false, out[0..14]=pc);
 }
