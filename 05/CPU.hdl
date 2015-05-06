@@ -51,8 +51,12 @@ CHIP CPU {
     // D命令
     And(a=instD, b=instruction[12], out=readMem);  // 1=ALUにinMを入力
 
+    // cmp
+    Mux(a=instruction[9], b=false, sel=readMem, out=zyALU);
+
     // dest
-    And(a=instD, b=instruction[5], out=saveAReg); // ALU計算結果をAレジスタに保存
+    And(a=instD, b=instruction[5], out=saveARegTmp);
+    Or(a=saveARegTmp, b=loadAReg, out=saveAReg);  // ALU計算結果をAレジスタに保存
     And(a=instD, b=instruction[4], out=saveDReg); // ALU計算結果をDレジスタに保存
     And(a=instD, b=instruction[3], out=saveM);    // ALU計算結果をMemory[A]に保存
 
@@ -64,7 +68,7 @@ CHIP CPU {
 
     // ARegister
     Mux16(a=outALU, b[15]=false, b[0..14]=instruction[0..14], sel=loadAReg, out=toAReg);
-    ARegister(in=toAReg, load=loadAReg, out=fromAReg,
+    ARegister(in=toAReg, load=saveAReg, out=fromAReg,
     // addressM
                                         out[15]=false, out[0..14]=addressM);
 
@@ -77,7 +81,7 @@ CHIP CPU {
     Mux16(a=fromAReg, b=inM, sel=readMem, out=toALU);
     ALU(x=fromDReg, y=toALU, zx=instruction[11],
                              nx=instruction[10],
-                             zy=instruction[9],
+                             zy=zyALU,
                              ny=instruction[8],
                              f= instruction[7],
                              no=instruction[6],
@@ -90,14 +94,15 @@ CHIP CPU {
     And(a=instD, b=saveM, out=writeM);
 
 
-    // jmp
-    // outALU<0
+    // jump condition
+
+    // outALU < 0 ?
     Xor(a=ngALU, b=j1, out=tmp1);
     Not(in=tmp1, out=jmp1);
-    // outALU = 0
+    // outALU = 0 ?
     Xor(a=zrALU, b=j2, out=tmp2);
     Not(in=tmp2, out=jmp2);
-    // 0 < outALU
+    // 0 < outALU ?
     Or(a=zrALU, b=ngALU, out=tmp3);
     Not(in=tmp3, out=grZero);
     Xor(a=grZero, b=j3, out=tmp4);
