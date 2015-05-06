@@ -46,10 +46,9 @@ CHIP CPU {
     Not(in=instA, out=instD);             // 1=D命令
 
     // A命令
-    Not(in=instruction[15], out=loadAReg); // 1=ARegisterを書き換える
+    And(a=instA, b=instA, out=loadAReg); // 1=ARegisterを書き換える
 
     // D命令
-    And(a=instD, b=instruction[12], out=loadDReg); // 1=DRegisterを書き換える
     And(a=instD, b=instruction[12], out=readMem);  // 1=ALUにinMを入力
 
     // dest
@@ -71,7 +70,7 @@ CHIP CPU {
 
 
     // DRegister
-    DRegister(in=outALU, load=loadDReg, out=fromDReg);
+    DRegister(in=outALU, load=saveDReg, out=fromDReg);
 
 
     // ALU
@@ -92,12 +91,15 @@ CHIP CPU {
 
 
     // jmp
+    // outALU<0
     Xor(a=ngALU, b=j1, out=tmp1);
     Not(in=tmp1, out=jmp1);
+    // outALU = 0
     Xor(a=zrALU, b=j2, out=tmp2);
     Not(in=tmp2, out=jmp2);
+    // 0 < outALU
     Or(a=zrALU, b=ngALU, out=tmp3);
-    Not(in=tmp3, out=grZero);   // 0<outALU
+    Not(in=tmp3, out=grZero);
     Xor(a=grZero, b=j3, out=tmp4);
     Not(in=tmp4, out=jmp3);
 
