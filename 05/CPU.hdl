@@ -95,24 +95,55 @@ CHIP CPU {
 
 
     // jump condition
+    Not(in=ngALU, out=notNgALU);
+    Not(in=zrALU, out=notZrALU);
+    And(a=notNgALU, b=notZrALU, out=gt); // 0 < outALU
+    Not(in=gt, out=notGt);
 
-    // outALU < 0 ?
-    Xor(a=ngALU, b=j1, out=tmp1);
-    Not(in=tmp1, out=jmp1);
-    // outALU = 0 ?
-    Xor(a=zrALU, b=j2, out=tmp2);
-    Not(in=tmp2, out=jmp2);
-    // 0 < outALU ?
-    Or(a=zrALU, b=ngALU, out=tmp3);
-    Not(in=tmp3, out=grZero);
-    Xor(a=grZero, b=j3, out=tmp4);
-    Not(in=tmp4, out=jmp3);
+    // jmp命令のチェック
+    DMux8Way(in=true, sel[2]=j1, sel[1]=j2, sel[0]=j3, a=jnull, b=jgt, c=jeq, d=jge, e=jlt, f=jne, g=jle, h=jmp);
 
-    And(a=jmp1, b=jmp2, out=jtmp1);
-    And(a=instD, b=jmp3, out=jtmp2);
-    And(a=jtmp1, b=jtmp2, out=loadPC); // 1=PCを書き換える
+    // jnull
+    And(a=jnull, b=false, out=jnullVal);
+
+    // jgt
+    And(a=notNgALU, b=notZrALU, out=jgt1);
+    And(a=jgt, b=gt, out=jgt2);
+    And(a=jgt1, b=jgt2, out=jgtVal);
+
+    // jeq
+    And(a=notNgALU, b=zrALU, out=jeq1);
+    And(a=jeq, b=notGt, out=jeq2);
+    And(a=jeq1, b=jeq2, out=jeqVal);
+
+    // jge
+    Or(a=gt, b=zrALU, out=jge1);
+    And(a=jge, b=notNgALU, out=jge2);
+    And(a=jge1, b=jge2, out=jgeVal);
+
+    // jlt
+    And(a=ngALU, b=notZrALU, out=jlt1);
+    And(a=jlt, b=notGt, out=jlt2);
+    And(a=jlt1, b=jlt2, out=jltVal);
+
+    // jne
+    Or(a=ngALU, b=gt, out=jne1);
+    And(a=jne1, b=notZrALU, out=jne2);
+    And(a=jne, b=jne2, out=jneVal);
+
+    // jle
+    Or(a=ngALU, b=zrALU, out=jle1);
+    And(a=jle, b=notGt, out=jle2);
+    And(a=jle1, b=jle2, out=jleVal);
+
+    // jmp
+    And(a=jmp, b=true, out=jmpVal);
+
+    // jumpする条件か
+    Or8Way(in[0]=jnullVal, in[1]=jgtVal, in[2]=jeqVal, in[3]=jgeVal, in[4]=jltVal, in[5]=jneVal, in[6]=jleVal, in[7]=jmpVal, out=doJump);
 
 
     // program counter
-    PC(in=fromAReg, load=loadPC, inc=true, reset=reset, out[15]=false, out[0..14]=pc);
+    Not(in=doJump, out=doInc);
+    PC(in=fromAReg, load=doJump, inc=doInc, reset=reset, out[15]=false, out[0..14]=pc, out[0..14]=pcVal);
 }
